@@ -1,0 +1,300 @@
+---
+title: "**ECON 333 assignment 2**"
+author: "**Assignment 2**"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+```
+
+
+##### **The assignment must be knitted in html (not the "nb.html" file that will be created alongside), and submitted on canvas by the deadline. Type your answer under the "Answer" section after each question. Chunks of code are inserted where the answer necessitates to use run some commands. Replace the "author" label with your full name, student number and tutorial section. Add your name and student number to the title of the file, after "A2 -". Late submissions will get a penalty, and failure to submit the html and Rmd file together result in a penalty as well.**
+
+### **Exercise 1 (14 points)**
+The following code chunk generates a sample of size $n$ of independent realizations of a normally distributed random variable with mean $\mu=25$ and $\sigma^2=9$.
+```{r}
+set.seed(123)
+n <- 20
+mu <- 25
+sigma <- 3
+x <- rnorm(n, mean = mu, sd = sigma)
+```
+
+##### (a.)
+Compute the sample average, median and variance. Compute the variance without the use of the *var* function as well, and make sure your result matches the one *var* returns. (2 points)
+
+##### **Answer:**
+
+```{r}
+##Sample Mean 
+xbar<- mean(x,na.rm = T)
+xbar
+## Sample Median 
+xMedian <-median(x)
+xMedian
+## Sample Variance 
+xsigma<-sum((x-xbar)^2)/(n-1)
+##Sample variance check
+var(x)
+```
+
+##### (b.)
+The following chunk of code prepares a \texttt{for} loop where you have to compute the sample average, median and variance of the sample, over different sample sizes. 
+
+The object \texttt{mat} is a matrix with **6** rows (one for each sample size) and **3** columns (1 for the mean, 1 for the median and 1 for the variance), to be filled during the loop.
+
+Complete the chunk of code by replacing all the "?". Remove the "eval = FALSE" option in the chunk header when knitting to a pdf (otherwise \textbf{\textsf{R}} will show that chunk of code and not run it). (3 points)
+
+##### **Answer:**
+
+```{r, eval= FALSE}
+set.seed(123)
+N <- c(10, 20, 100, 1000, 10000, 100000)   # The different sample sizes we'll consider here
+mat <- matrix(0, nrow = 6, ncol = 3)    # The matrix to be filled during the loop
+for (i in 1:6)
+{
+  x <- rnorm(N[i], mean = mu, sd = sigma)      # Generate the sample. Each iteration, it should be 
+  # a different sample size that the loop automatically updates
+  mat[i,1] <- mean(x)
+  mat[i,2] <- median(x)
+  mat[i,3] <- var(x)
+}
+mat
+```
+
+##### (c.)
+Compare the averages, medians and variances across sample sizes (if you did not manage to complete the loop, redo (a.) for the different sample sizes shown in (b.), i.e. copy and paste the chunk and change **n** every time). Do you notice a pattern? Explain what property it illustrates. (3 points)
+
+##### **Answer:**{
+## We observe that the sample mean, median, and variance converge towards the population mean, median and variance as the sample size increased. This is same observation described in the law of large numbers.  ##
+}
+
+##### (d.)
+The following code chunk prepares a simulation of **s=5000** rounds, where each round, a sample of **n=1,000** realizations from a normal distribution with mean $\mu=25$ and standard deviation $\sigma=3$. Complete the loop by computing the sample mean each round, and placing the mean inside the **[s x 1]** ***mat*** vector. (3 points)
+
+##### **Answer:**
+
+```{r, eval = FALSE}
+mu <- 25
+sigma <- 3   
+n <-  1000
+s <- 5000
+mat <- matrix(0, nrow = s, ncol = 1)    # The matrix to be filled during the loop
+for (i in 1:s)
+{
+  x <- rnorm(n, mean = mu, sd = sigma) 
+  mat[i,1] <-  mean(x) 
+}
+head(mat)
+```
+
+##### **Marking guidelines:**
+
+##### (e.) 
+Compute the average and variance of the ***mat*** object. Are they close to the expectation and variance of the sample average? Show your computations in **R** and explain. (1.5 points)
+
+Plot the density of the values in ***mat*** using ***plot(density(mat))***. What does the density look like? Explain.
+
+##### **Answer:**
+```{r}
+# E[x]= mean = average
+mu <- 25
+sigma <- 3   
+n <-  1000
+s <- 5000
+mat <- matrix(0, nrow = s, ncol = 1)    # The matrix to be filled during the loop
+for (i in 1:s)
+{
+  x <- rnorm(n, mean = mu, sd = sigma) 
+  mat[i,1] <-  mean(x) 
+}
+avg<- mean(mat)
+
+avg
+
+variancex <- var(mat[i:1],y=NULL, na.rm = FALSE)
+
+variancex 
+
+#Yes, the expectation (which is the mean) and the sample variance are close to the population values. This could be attributed to the feature of the sample size as its large enough to make an accurate prediction of the population average and variance
+```
+
+##### (f.) 
+Plot the density of the values in ***mat*** using ***plot(density(mat))***. What does the density look like? Explain. (1.5 points)
+
+##### **Answer:**
+```{r}
+plot(density(mat))
+mu <- 25
+sigma <- 3   
+n <-  1000
+s <- 5000
+mat <- matrix(0, nrow = s, ncol = 1)    # The matrix to be filled during the loop
+for (i in 1:s)
+{
+  x <- rnorm(n, mean = mu, sd = sigma) 
+  mat[i,1] <-  mean(x) 
+}
+## The density values are normally distributed. Meaning that as the sample size increases, the sample distribution becomes increasingly more 'normal'. If the sample size was small (n<30) we would need to use the student t distribution to account for the irregular disparities in values, however, the bell curve resembles a normal distribution. 
+```
+
+### **Exercise 2 (16 points)**
+Consider the Wage data set, available by running the following commands (the data set will appear under the name "Wage" on the top right hand corner. Make sure you install the \texttt{ISLR} package first)
+
+```{r}
+# install.packages("ISLR")
+library(ISLR)
+data(Wage)
+```
+
+##### (a.) 
+Consider the ***health_ins*** variable. Create a binary variable called ***insurance*** using the ***ifelse*** function. That variable is equal to **1** if ***health_ins*** is "Yes", and **0** if it is "No". 
+Compute the sample proportion of observations who have health insurance and call it ***phat*** Estimate the standard deviation of ***phat*** and call it ***sd_phat***. Show all the values. (2 points)
+
+##### **Answer:**
+
+```{r, echo = TRUE}
+## ifelse(WAGE$, health_ins = "1. YES",1,0
+insurance<- ifelse(Wage$health_ins=="1. Yes",1,0)
+phat <- mean(insurance)
+phat
+
+## Standard deviation of phat 
+sd_phat<- sd(insurance)
+sd_phat
+
+
+```
+
+##### (b.) 
+Test the hypothesis that the true proportion of people who have health insurance, ***p***, is equal to **75%** against the alternative that it is different from **75%** with a significance level of **10%**. Show your computations in **R** and clearly state your decision to reject or not reject. (2 points)
+
+##### **Answer:**
+
+```{r, echo = TRUE}
+# H0 value for the proportion of people who have health insurance =75%
+
+H0_p<- 0.75
+phat <- mean(insurance)
+phat
+H_ins_test<- (phat - H0_p)/(sd_phat)
+
+H_ins_test
+n<- sqrt(3000)
+##Critical value 
+Critical_value <- qnorm(0.05,FALSE)
+Critical_value
+
+##Compare critical value to test statistic
+if(abs(H_ins_test)!=abs(Critical_value)){"Reject_H0"}else{"Fail_to_reject H0"}
+
+```
+
+##### (c.) 
+Look at the ***wage*** variable. Compute its sample average and standard deviation. Using the sampling distribution of the sample average, compute the probability that the average wage is bigger than **\$112** (the sample is considered big enough). Show your computations in **R**. (2 points)
+
+##### **Answer:**
+
+```{r, echo = TRUE}
+# The sample average and standard deviation are necessary for computing the probability 
+wmean <-mean(Wage$wage)
+wmean
+
+sdwage<-sd(Wage$wage)
+sdwage
+
+#P(X ≤ 112) = P(Z≤ (112-wmean)/sdwage)
+z_score<- (wmean-112) / sdwage
+z_score
+#But this is for x<112, we need to re-arrange it for x>112, which is just 1- P(z<0.0071)
+#To find the area above 0.007102846, first we will find the area below 0.007102846.Using the standard normal table to find the area below 0.007102846. We conclude that the area below p(z<0.007102846) = 0.504, so, 1 - 0.504 = 0.496
+
+#prob_wage>112 = 0.496
+
+```
+
+##### (d.) 
+Test the hypothesis that the true average wage is equal to **$110** against the alternative that it is bigger than **\$110** with a **2.5%** significance level. Show your computations in **R**. (2 points)
+
+##### **Answer:**
+
+```{r, echo = TRUE}
+
+wtest <- (wmean-110)/(sdwage/sqrt(length(Wage$wage)))
+wtest
+
+Wt_stat <- qnorm(0.0125)
+Wt_stat
+
+Wt2_stat <- qnorm(0.025, lower.tail = FALSE)
+Wt2_stat
+
+if(abs(wtest)!=abs(Wt_stat)){"Reject H0"}else{"Fail to reject H0"}
+if(abs(wtest)>Wt2_stat){"Fail to reject Ha"}else{"Reject Ha"}
+```
+
+##### (e.) 
+Construct a **95\%** confidence interval for the true average wage. Is the value **$110** included? Relate your answer to your decision in the previous question. (2 points)
+
+##### **Answer:**
+```{r}
+# Answ
+Lower <- wmean-Wt2_stat*(sdwage/sqrt(length(Wage$wage)))
+Higher <- wmean+Wt2_stat*(sdwage/sqrt(length(Wage$wage)))
+CI <- c(Lower, Higher)
+CI
+```
+
+##### (f.) 
+We are interested in the difference in average wages across the ***jobclass*** variable. Compute the sample average of the ***wage*** variable for *Industrial* jobs (call it ***wbar_industrial***) and for *Information* jobs (call it ***wbar_information***). Estimate the variance of the sample averages as well (call them ***w_bar_var_industrial*** and ***w_bar_var_industrial*** respectively) and show them all. The ***filter*** command form the *dplyr* package will be useful (the *dplyr* package is included in the *tidyverse* package, so there is no need to install it separately. In the code chunk, type ***dplyr::filter*** if you want to use ***filter***. It makes sure the filter command from the dplyr package is uses, as opposed to the filter command from another package), as it allows to extract observations where a variable has a specific value. You can extract two data sets according to whether ***jobclass*** is ***industrial*** or ***information***. (3 points)
+
+##### **Answer:**
+
+```{r}
+# A
+Industrial <- subset(Wage, jobclass=="1. Industrial")
+
+Information <- subset (Wage, jobclass =="2. Information")
+
+wbar_industrial <- mean(Industrial$wage)
+wbar_industrial
+
+wbar_information <- mean(Information$wage)
+wbar_information
+
+w_bar_var_industrial <- var(Industrial$wage)
+w_bar_var_industrial
+
+w_bar_var_information <- var(Information$wage)
+w_bar_var_information
+```
+
+
+
+##### (g.) 
+We want to test the hypothesis that the difference in wages between the two job classes is equal to 0, against the alternative hypothesis that this difference is not equal to 0. The significance level is **5%**. Show your computations in **R** (show either the test statistic or the p-value) and clearly state your decision to reject or not reject. (3 points)
+
+##### **Answer:**
+
+```{r}
+# Answer here
+wgap <- wbar_information- wbar_industrial
+wgap 
+
+vgap <- (w_bar_var_industrial/length(Industrial$wage))+(w_bar_var_information/length(Information$wage))
+vgap
+
+tgap <- (wgap-0)/sqrt(vgap)
+tgap
+
+if(abs(tgap)!=abs(1.96)){"Reject H0, Fail to Reject Ha"}else{"Fail to reject H0, Reject Ha"}
+
+```
