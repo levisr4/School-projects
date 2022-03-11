@@ -1,0 +1,236 @@
+---
+title: "**ECON 333 assignment 1**"
+author: "**Assignment 1**"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+
+list.of.packages <- c("tidyverse")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+# library(lubridate)
+
+```
+
+
+##### **The assignment must be knitted in html (not the "nb.html" file that will be created alongside), and submitted on canvas by the deadline. Type your answer under the "Answer" section after each question. Chunks of code are inserted where the answer necessitates to use run some commands. Replace the "author" label with your full name, student number and tutorial section. Add your name and student number to the title of the file, after "A1 -".**
+
+
+### **Exercise 1 (2 points)**
+Consider a 20-faced die (called a **icosahedron**, it dates back to ancient Egypt and is nowadays used in some role playing games), and let $X$ be the number obtained after throwing the die once (assume the die is numbered from **1** to **20**). 
+
+##### (a.) What is the expectation of $X$? Make sure you show the process and show the result in **RStudio**. Compute the expectation by hand **and** using a function in **R**. (1 point)
+
+##### **Answer:**
+
+```{r}
+x<-c(1:20)
+y<- rep.int(0.05, 20)
+z<- sum(x*y)
+z
+```
+
+##### (b.) What is the variance of $X$? Make sure you show the process and show the result in **RStudio**, i.e. don't use the *var* function from **R**. (1 point)
+
+##### **Answer:**
+```{r}
+v <-(sum(1:20-10.5)^2/19)
+v
+```
+
+### **Exercise 2 (4 points)**
+Consider a bent coin, so that there is a $55\%$ chance the coin lands on Heads, and a $45\%$ chance it lands on Tails. Let $X$ be a random variable equal to $1$ if the coin lands on Heads, and $0$ otherwise.
+
+##### (a.) Compute the expectation of $X$. Show your work. (1 point)
+
+##### **Answer:**
+```{r}
+## Expected value function for n trials
+E <- function(n){
+  y=n*.55
+  return(y)
+}
+
+E(1)
+```
+
+##### (b.) Compute the expectation of $X^2$. Show your work. (2 points)
+
+##### **Answer:**
+```{r}
+# Expected Value function for n trials
+U <- function(n,p){
+  s=n^2*p
+  return(s)
+}
+U(n=1,p=.55)
+
+
+```
+
+##### (c.) Compute the variance of $X$. Show your work. (1 point)
+
+##### **Answer:**
+```{r}
+# Variance[x] of $X$
+R <- function(U,E,p){
+  w=(U-E)^2*p
+return(w)
+}
+ R(U=0.55,E=0.55,p=.55)
+ 
+  
+
+```
+
+### **Exercise 3 (18 points)**
+The following statistics have recently been reported by the British Columbia government over a week in December 2021 regarding the number of Covid-19 cases in the province, along with people who needed hospitalization because of the virus, and whether these patients were vaccinated or not:
+
+- Total number of cases: **3,394**
+- Not vaccinated: **1,386**
+- Vaccinated (partially or fully): **2,008**
+- Hospitalized: **155** (**among them**, **105** aren't vaccinated and **50** are partially or fully vaccinated)
+
+Let $X$ be a random variable equal to $1$ if the patient was hospitalized, and $0$ otherwise.
+Let $Y$ be a random variable equal to $1$ if the patient was vaccinated (partially or fully), and $0$ otherwise.
+In all the subsequent calculations, round off your results at 3 decimal places.
+
+##### (a.) Based on the statistics above, what is the proportion of cases who got hospitalized? Non hospitalized? (1 point)
+
+##### **Answer:**
+```{r}
+# f = Hospitalized / Total Cases 
+ f<- 155 / 3394
+f
+ # Pnh = NonHospitalized / TotalCases 
+P<-(3394-155)/3394
+P
+
+```
+
+##### (b.) What is the proportion of cases who got hospitalized **and** were vaccinated? Hospitalized **and** non vaccinated? (4 points)  
+
+##### **Answer:**
+
+```{r}
+# Unlucky(pnh & v)= (hospitalized & vaccinated) / total cases 
+ hv<-50
+tc<-3394
+ unlucky<-(hv/tc)
+ unlucky
+ 
+ #Menace= (Hospitalized & unvaccinated) / Total cases 
+ hnv<- 105
+ menace <- (hnv /tc)
+ menace
+
+  
+```
+
+
+##### (c.) Complete the following table based on your results in question (a.) and (b.) (all the places marked with a "x"). For instance, think of the probability of $X=1 \cap Y=0$ as the proportion of hospitalized **and** non vaccinated cases (be very careful that everything matches as these numbers are needed in the subsequent questions). (5 points)
+
+##### **Answer:**
+
+Y/X                    X = 0              X = 1            $\mathbb{P}(Y)$
+--------              --------------   ----------------  --------------
+Y = 0                 0.37743053       0.03093695        0.4083677
+Y = 1                 0.57690042       0.01473188        0.5916323
+$\mathbb{P}(X)$       0.9543312        0.04566883        1
+---------            --------------   ----------------  --------------
+
+##### (d.) Compute $\mathbb{P}(X=1|Y=1)$ (call it "p11" in **R**) and $\mathbb{P}(X=1|Y=0)$ (call it "p10" in **R**). Show the calculation in **R**. (2 points)
+
+##### **Answer:**
+```{r}
+#p11 is a function of (Y=1,X=1)  
+p11<-unlucky/0.591632292280495
+p11
+# p10 is a function of Y= 0 (q) and X=1 (unlucky)
+p10 <- menace / 0.408367707719505
+p10
+```
+
+##### (e.) Compute $\mathbb{P}(X=0|Y=1)$ (call it "p01") and $\mathbb{P}(X=0|Y=0)$ (call it "p00"). Show the calculation in **R**. (2 points) 
+
+##### **Answer:**
+
+```{r}
+# p01 is a function of X=0 (smart) and Y= 1 (a)
+p01 <- smart/ a
+p01 
+
+# p00 is a function of X=0 (O) and Y=0 (q)
+p00<- O/q
+p00
+```
+
+##### (f.) Compute $\mathbb{E}(X|Y=1)$ (call it "Ex1" in **R**) and $\mathbb{E}(X|Y=0)$ (call it "Ex0" in **R**). Show the calculation in **R**. (2 points)
+
+##### **Answer:**
+```{r}
+# E[X|Y=1] = P(X=0|Y=1)•0+P(X=1|Y=1)•1
+##E[X|Y=1] = P(X=1|Y=1) 
+#P(X= Y=1) = p11 
+Ex1 <- p11
+Ex1
+
+# E[X|Y=0] = P(X=0|Y=0)•0 + P(X=1|Y=0)•1
+## E[X|Y=0] = P(X=1|Y=0)
+#P(X=1|Y=0) <- p10
+Ex0 <-p10
+Ex0
+```
+
+##### (g.) Given your answer in (f.) and ignoring the side effects of vaccination, would you rather be vaccinated or not? Explain. (2 points)
+
+##### **Answer:** 
+###### We can derive from the conditional expectation above that the expectation to get hospitalized given that you are vaccinated is lower than if you are unvaccinated. This means that the vaccine is effective at reducing hospitalizations.
+
+
+### **Exercise 4 (6 points)**
+Consider the Wage data set, available by running the following commands (the data set will appear under the name "Wage" on the top right hand corner. Make sure you install the ISLR package first)
+
+```{r}
+# install.packages("ISLR")
+library(ISLR)
+data(Wage)
+```
+
+##### (a.) Show the first observations using the head command. How many variables are there in this data set? How many observations are there? (1 point)
+
+##### **Answer:**
+
+```{r}
+head(Wage)
+
+```
+
+##### (b.) Use the summary command to show some summary statistics and answer the following questions: (4 points)
+##### What is the proportion of observations whose "jobclass" is "Industrial"?
+##### What is the oldest observation? Youngest?
+##### What is the proportion of observations who are married?
+##### What is the average and median wages?
+
+##### **Answer:**
+
+```{r}
+summary(Wage)
+Industrial <- (1544)/(1456+1544)
+Industrial
+Married <- (2074)/(648+2074+19+204+55)
+Married
+```
+The oldest observation dates back to 2003, the youngest is in 2009. We can observe this in the summary table. 
+From the summary table, we can observe that the Mean and Median wages are 111.70 and 104.92 respectfully. 
+
+##### (c.) If you were asked to analyze the income distribution of a population or a sample, would you rather use the median wage or average wage? Explain. (1 point)
+
+##### Median wage would be a more accurate depiction of the the income distribution of the population. This is because it would eliminate the externalities and show what the middle income is 
+
