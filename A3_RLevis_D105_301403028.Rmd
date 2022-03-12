@@ -1,0 +1,275 @@
+---
+title: "**ECON 333 assignment 3**"
+author: "**Assignment 3**"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+```
+
+
+##### **The assignment must be knitted in html (do not submit the "nb.html" file that will be created alongside), and submitted on canvas by the deadline. Type your answer under the "Answer" section after each question. Chunks of code are inserted where the answer necessitates to use run some commands. Replace the "author" label with your full name, student number and tutorial section. Add your name and student number to the title of the file, after "A3 -". Late submissions will get a penalty, and failure to submit the html and Rmd file together result in a 0 grade. It is advised to break your code chunks in several code chunks so it is easier to grant partial marks.**
+
+### **Exercise 1 (12 points)**
+The following code chunk generates a data set of size $n$ of realizations of the random variables $u$ , $x$  and $y$. Throughout the exercise, do not modify the ***set.seed(123)*** line. 
+```{r}
+set.seed(123)
+n <- 20
+u <- rnorm(n)
+x <- rnorm(n, mean = 10, sd = 0.5)
+beta_0 <- 5
+beta_1 <- 10
+y <- beta_0 + beta_1*x + u
+```
+
+##### (a.)
+Compute the OLS estimates of $\beta_0$ and $\beta_1$. Call them ***beta0_hat*** and ***beta1_hat*** respectively. (2 points)
+
+##### **Answer:**
+```{r}
+beta1_hat <- cov(x, y)/var(x) 
+beta0_hat <- mean(y) - beta1_hat*mean(x)
+```
+
+##### (b.)
+The following chunk of code prepares a ***for*** loop where you have to compute the OLS estimates. To do so, you need to generate data according to the following process:
+
+- The error term $u$ should follow a **uniform** distribution with minimum value **-10** and maximum value **10** (check ***runif***)
+- The explanatory variable $x$ should follow a **normal** distribution with mean **50** and standard deviation **15**
+- $\beta_0 = 0.5$ and $\beta_1 = -3$
+- $y = \beta_0 + \beta_1x + u$
+- OLS estimates should be computed for samples of size **10, 50, 100, 200, 500, 1000, 10000, and 100000**
+- Put your estimates in a matrix called ***mat*** where the first column reports the estimate of the intercept and the second column the estimate of the slope, and each row represents a sample size
+
+Complete the chunk of code by using the simulation of part (a) as a template. Remove the "eval = FALSE" option in the chunk header when knitting to a pdf (otherwise \textbf{\textsf{R}} will show that chunk of code and not run it). Once the loop is over, change the format of **mat** into a data frame, name each row according to the sample and each column according to the estimate that is computed. ***rownames*** and ***colnames*** will be useful functions. Show **mat** after all the formatting is done. (3 points)
+
+##### **Answer:**
+
+```{r, eval = FALSE}
+set.seed(123)
+beta_0 <- 0.5
+beta_1 <- 3
+N <- c(10, 50, 100, 200, 500, 1000, 10000, 100000)
+mat <- matrix(0, nrow=8, ncol=2)
+for (i in 1:8 )
+{
+u <- runif(N[i], min=-10, max= 10) 
+x <- rnorm(N[i], mean = 50, sd = 15)
+y <- beta_0 +beta_1*x+u
+
+beta1_hat <-cov(x, y)/var(x)
+beta0_hat <- mean(y) -beta1_hat*mean(x) 
+
+mat[i,1] <-beta0_hat
+mat[i,2] <- beta1_hat
+}
+
+mat <- as.data.frame(mat)
+colnames(mat) <- c("intercept", "slope")
+rownames(mat) <- c(10, 50, 100, 200, 500, 1000, 10000, 100000)
+mat                  
+
+```
+
+##### (c.)
+Compare the estimates across sample sizes (if you did not manage to complete the loop, redo (a.) for the different sample sizes shown in (b.), i.e. use (a) to make one simulation according to the instructions in (b) and change $n$ every time). Do you notice a pattern? Explain what property it illustrates. (2 points)
+
+##### **Answer: Yes, this represents unbiasedness. meaning that the E[ßols] =ß. This is important for us because it tells us when the sample size gets infinitely large, the values of ß converge to their population values accurately. In particular, beta0_hat converges to its population intercept beta0 and beta1_hat converges to its population value beta1.# 
+
+##### (d.)
+The following code chunk prepares a simulation of **s = 5,000** rounds, where each round, a sample data set of **n = 1,000** is generated like in the previous question. Complete the loop by computing the OLS estimates each round, and placing the estimates inside the **[s x 2]** ***mat*** matrix. Then change the format of **mat** into a data frame and name each column according to the estimate that is computed. (2 points)
+
+##### **Answer:**
+
+```{r, eval = FALSE}
+set.seed(123)
+s <- 5000
+n <- 1000
+beta_0 <- 0.5
+beta_1 <- -3
+mat <- matrix(0,nrow = s, ncol = 2)
+for (i in 1:s) 
+  
+{
+  
+u <- runif(n, min= -10, max = 10)
+x <- rnorm(n, mean = 50, sd=15)
+y <- beta_0 + beta_1*x + u
+
+beta1_hat <- cov(x, y)/var(x)
+beta0_hat <- mean(y) - beta1_hat*mean(x)
+
+mat[i,1] <- beta0_hat
+mat[i,2] <- beta1_hat
+}
+mat <- as.data.frame(mat)
+colnames(mat) <- c("intercept", "slope")
+View(mat)
+```
+
+
+##### (e.) 
+Compute the average estimated intercept and slope over all the simulation rounds. Show your computations in **R** and explain what you see. (1.5 points)
+
+##### **Answer:**
+```{r, eval=FALSE}
+mean(mat$intercept)
+mean(mat$slope)
+
+## The estimates are very close to the population values. This is good news for us since this is suppose to happen when we minimize ßols in a well fitted test. 
+```
+
+
+##### (f.) 
+Plot the histogram of the slope in ***mat*** using the ***ggplot*** function. Change the color of the histogram. A different color should be used for the edges of the bars and for the actual filling of the bars. What does the density look like? Explain. (1.5 points)
+
+##### **Answer:**
+
+```{r, eval=FALSE}
+ggplot(data = mat, aes(x=slope)) +
+  geom_histogram(fill ="pink", colour="white")
+#the density appears to be normally distributed and centered around -3 (beta1) which is the slope of our regression model. This means that our regression model is a good fit for the test since the sample values appear to be concentrated around the mean. 
+```
+
+### **Exercise 2 (18 points)**
+Consider the following data set coming from the **MASS** package (the data set will appear under the name "Wage" on the top right hand corner. Make sure you install the **MASS** package first)
+
+```{r, message = FALSE}
+# install.packages("MASS")
+library(MASS)
+data(birthwt)
+head(birthwt)
+```
+Each observation in the data set is a mother for which we observe several variables during pregnancy:
+
+- ***bwt*** is the weight of the baby at birth in grams
+- ***low*** is a binary variable equal to 1 if the baby weighs less than 2,500 grams, and 0 otherwise
+- ***age*** is the age of the mother
+- ***ht*** is a binary variable for a history of hypertension
+- ***smoke*** is a binary variable equal to 1 if the mother is a smoker, and 0 otherwise
+
+##### (a.) 
+Compute (and show) the average weight of a baby whose mother is a smoker (call it **bwtbar_s**) and the average weight of a baby whose mother is not a smoker (call it **bwtbar_ns**). Compute the difference in these averages weights (call it **dhat**) and compute the estimated standard deviation of the difference (call it **sd_d**). Answers to assignment 2 might be useful. (3 points)
+
+##### **Answer:**
+```{r}
+smokers <- dplyr::filter(birthwt, smoke== 1)
+nonsmokers <- dplyr::filter(birthwt, smoke== 0)
+
+bwtbar_s <- mean(smokers$bwt)
+bwtbar_ns <- mean(nonsmokers$bwt)
+
+bwtbar_s
+bwtbar_ns
+
+dhat <- bwtbar_ns -bwtbar_s
+dhat
+
+bwtbar_s_var <- var(smokers$bwt)/nrow(smokers)
+bwtbar_ns_var <- var(nonsmokers$bwt)/nrow(nonsmokers)
+
+sd_d <- sqrt(bwtbar_s_var + bwtbar_ns_var)              
+sd_d
+```
+
+##### (b.) 
+Test the hypothesis that the true difference in average baby weights between smokers and non smokers, **d**, is equal to **0** against the alternative that it is different from **0** with a significance level of **5%**. Show your computations in **R** and clearly state your decision to reject or not reject. (3 points)
+
+##### **Answer:**
+
+```{r}
+d_h0 <- 0 
+test <- (dhat -0)/sd_d
+test
+
+crit_value <- qnorm(0.025, lower.tail = FALSE)
+crit_value
+
+if(abs(test)> crit_value){"Reject_H0"}else{"Do_not_reject_H0"}
+```
+
+##### (c.) 
+Construct a **95%** confidence interval for **d**. (2 points)
+
+##### **Answer:**
+
+```{r}
+U <- dhat + qnorm(0.025, lower.tail = FALSE)*(sd_d)
+L <- dhat - qnorm(0.025, lower.tail = FALSE)*(sd_d)
+CI <- c(L,U)
+CI
+```
+
+##### (d.) 
+We are interested in the effect of smoking during pregnancy on the average weight of the baby. In order to answer this question, regress the weight of the baby on the smoking status of the mother. What is the estimated effect of smoking on the weight of the baby? Is the baby of a smoking mother expected to be heavier or lighter than that of a non smoking mother? Show your results and compare with your answer in (a.). (3 points)
+
+##### **Answer:**
+
+```{r}
+model <- lm(birthwt$bwt ~ birthwt$smoke)
+summary(model)
+
+#the data represents
+```
+
+
+##### (e.) 
+We say that a variable is **significant** when we reject the hypothesis that the associated coefficient is equal to 0. Test that hypothesis for the variable ***smoke*** with a significance level of **5%** and conclude whether this variable is significant or not. Show your results. (2 points)
+
+```{r}
+critical_value <- qnorm(0.025, lower.tail = FALSE)
+critical_value
+# Calculating the p-value from the normal distribution
+pvalue <- 0.008667
+# Compare critical values and decide
+if(abs(test) > critical_value){"Reject H0"} else{"Do not reject H0"}
+# Compare p-values and decide
+if(pvalue < 0.025){"Reject H0"} else{"Do not reject H0"}
+
+#We reject since the variable is significant.
+
+```
+##### (f.) 
+Construct a **95%** confidence interval for the coefficient associated to the variable ***smoke*** without any **R** function (hint: You know the asymptotic distribution of $\hat{\beta}_1$). (2 points)
+
+##### **Answer:**
+```{r}
+U <- -283.78 + qnorm(0.025, lower.tail = FALSE)*(106.97)
+L <- -283.78 - qnorm(0.025, lower.tail = FALSE)*(106.97)
+CI <- c(L,U)
+CI 
+
+sigma_hat_2 <- sum((model$residuals)^2)/(nrow(birthwt)-2)
+VX <- var(birthwt$smoke)
+var_beta1_hat <- sigma_hat_2/VX
+
+beta_1_hat <- model$coefficients[2]
+
+
+L <- beta_1_hat -qnorm(0.025, lower.tail = FALSE)*sqrt(var_beta1_hat/nrow(birthwt))
+U <- beta_1_hat + qnorm(0.025, lower.tail = FALSE)*sqrt(var_beta1_hat/nrow(birthwt))
+print(c("Lower Bound"=L, "Upper Bound"=U))
+```
+
+##### (g.) 
+Create a variable called ***bwt_lb*** that is equal to the weight of the baby in pounds (**1 gram = 0.0022 lbs**). The variable should be included in the data set (the **mutate** function from the **dplyr** package might be useful but you don't have to use it necessarily). Regress the weight in pounds on the smoking status. Compare your estimates with the ones in (d.). What do you notice? (3 points)
+
+##### **Answer:**
+
+```{r}
+bwt_lb<- birthwt$bwt * 0.0022
+model1 <- lm(bwt_lb ~ birthwt$smoke)
+summary(model1)
+
+#The birth weight of a baby from a smoking mother is roughly around .62 pounds less then a baby whose mother does not smoke. There is a 0.00867 chance of a finding a smoker baby whose weight is greater in abs terms of -2.653
+```
+
+
