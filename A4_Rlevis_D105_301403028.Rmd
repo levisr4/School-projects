@@ -1,0 +1,324 @@
+---
+title: "**ECON 333 assignment 4**"
+author: "**Solutions**"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(AER)
+```
+
+
+##### **The assignment must be knitted in html (do not submit the "nb.html" file that will be created alongside), and submitted on canvas by the deadline. Type your answer under the "Answer" section after each question. Chunks of code are inserted where the answer necessitates to use run some commands. Replace the "author" label with your full name, student number and tutorial section. Add your name and student number to the title of the file, after "A4 -". Late submissions will get a penalty, and failure to submit the html and Rmd file together result in a 0 grade. It is advised to break your code chunks in several code chunks so it is easier to grant partial marks.**
+
+### **Exercise 1 (14 points)**
+Engel curves depict the relationship between total expenditure of a household and the share of expenditure that goes to different categories of goods like food, clothing, etc... It is relevant to study how households allocate their expenditure depending on how much they spend in order to assess the impact of household oriented economic programs. 
+Consider the data set ***expendshare***, used in a paper by Richard Blundell, Alan Duncan and Krishna Pendakur (a SFU professor!) and published in the *Journal of applied Econometrics* in 1998. The data set is composed of households for which we observe characteristics such as the number of kids, income, the total weekly expenditure, and the different categories of goods the expenditures go into. More information can be found [here](https://cran.r-project.org/web/packages/wooldridge/wooldridge.pdf#Rfn.expendshares.1).
+
+##### (a.)
+Load the ***expendshare*** data using the code below and look at the different expenditure shares.
+Do they add up to 1? Show in in **R**. (2 points)
+
+##### **Answer:**
+```{r}
+library(tidyverse)
+expendshare <- read_csv("expendshare.csv")   # needs the tidyverse package to use the read_csv function
+```
+
+```{r}
+mean(expendshare$sfood) + mean(expendshare$sfuel) + mean(expendshare$sclothes) + mean(expendshare$salcohol)+ mean(expendshare$stransport) + mean(expendshare$sother)
+ 
+#Expenditure shares do indeed add up to one 
+```
+
+
+Expenditure shares indeed add up to 1.
+
+
+##### (b.)
+For the rest of this exercise, we are interested in the relationship between ***sfood*** (the share of weekly expenditure that goes to food) and ***totexpend*** (the total expenditure of a household). Regress ***sfood*** on ***totexpend***, ***age*** and ***kids***. What is the effect of increasing the number of kids by one on a household's expenditure share dedicated to food?
+What is the effect of increasing total expenditure by \$15 on a household's expenditure share dedicated to food? Show your work in **R**. (3 points)
+
+##### **Answer:**
+
+```{r}
+foodrexpend <- lm(formula = sfood ~ totexpend+ age+ kids, data = expendshare)
+summary(foodrexpend)
+# marginal effect of one kid on household expenditure on food = 0.02957
+extraexpen <- -0.001243*15 
+extraexpen
+#An increase in kid will increase food share by 0.029571. Increasing $15 on total expenditure decreases -0.018645 on food share. 
+```
+
+
+##### (c.)
+After consideration, using the logarithm of total expenditure as a covariate could be more relevant than using total expenditure itself. Estimate the same regression as before, except that ***totexpend*** is replaced by ***ltotexpend***. Would you choose ***totexpend*** or ***ltotexpend*** as a covariate? Explain.
+What is the effect of a 10\% increase in total expenditures on a household's expenditure share dedicated to food? Compute the exact effect and the approximate one. Show your work in **R**. (3 points)
+
+##### **Answer:**
+```{r}
+foodexp <- lm(sfood~ totexpend + age + kids, data=expendshare)
+summary(foodexp)
+Appx <- 0.1*-0.1459022
+Exact <- -0.1*log(1+0.1)
+Appx
+Exact
+#a 10% increase in total expenditure causes approximately a 0.01 decrease in the households expenditure share 
+
+```
+
+
+##### (d.)
+Regressing ***sfood*** on ***ltotexpend*** implies a linear relationship between the two variables. Create the square and the cube of ***ltotexpend*** and regress ***sfood*** on these 3 variables as well as ***kids*** and ***age***. Test the hypothesis that the square and cube of ***ltotexpend*** are jointly equal to $0$ with a significance level of 5\%.  Use the sum of squared residuals formula (do not round off any computation). Show your work in **R**. (3 points)
+
+##### **Answer:**
+
+```{r}
+expendshare$ltotexpend2 <- expendshare$ltotexpend^2
+expendshare$ltotexpend3 <- expendshare$ltotexpend^3
+
+z1 <- lm(sfood~ltotexpend2 + ltotexpend3 + kids + age, data=expendshare)
+summary(z1)
+
+unrest_res <- z1$residuals
+SSR_U <- sum(unrest_res^2)
+SSR_U
+
+#H0 is the coefficients on ltotexpend2 and ltotexpend 3 are zero 
+z_R <- lm(sfood ~ltotexpend + age + kids, data = expendshare)
+summary(z_R)
+
+#SSR in the restricted model 
+res_res <- z_R$residuals
+SSR_R <- sum(res_res^2)
+SSR_R
+
+q <- 2
+n <- nrow(expendshare)
+K <- 5
+
+F_STAT <- ((SSR_R - SSR_U)/q)/((SSR_U)/(n-K-1))
+F_STAT
+Crit_value <- qf(p=0.95, df1=2, df2=n-K-1)
+Crit_value
+if(F_STAT < Crit_value){"Do Not Reject"}else{"Reject"}
+```
+
+
+##### (e.) 
+Looking back at the OLS assumptions, one could wonder whether the **exogeneity** assumption is satisfied regarding the variable ***ltotexpend***. Explain why this variable could be correlated with the error term (and unobserved variables in general). Explain why the variable ***lincome*** could be a valid instrument and use it to compute the 2SLS estimates. The main regression also contains the variables ***age*** and ***kids***. Show your work in **R**. (3 points)
+
+
+##### **Answer:**
+
+
+```{r}
+Q1e <- ivreg(sfood ~ltotexpend + age + kids | lincome + age +kids, data=expendshare)
+summary(Q1e)
+
+#if we look at the error term for ltotexpend, its very close to 0 which satisfies the exogeneity assumption. lincome is also exogenous and the expectation of the regression ltotexpend with the condition of lincome is nearly zero. lincome is correlated to ltotexpend and sfood. lincome represents ltotexpend while being exogenous, therefore it is a valid instrument. 
+```
+
+
+### **Exercise 2 (14 points)**
+
+In this exercise, we are interested in the determinants of labour supply. According to economic theory, the decision to work or not and the amount of hours to work is the result of utility maximization subject to a time constraint and a budget constraint. We want to test this theory (in particular regarding married women) with the data set at hand.
+
+
+##### (a.) 
+Load the ***mroz.csv*** data set. Some of the variables it contains are:
+
+- ***inlf*** is a binary variable equal to 1 if the observation is in the labour force in 1975
+- ***wage*** is the wage per hour
+- ***hours*** is the number of hours worked in the year 1975
+- ***hushrs*** is the number of hours worked by the husband in 1975
+- ***huswage*** is the husband's hourly wage in 1975
+- ***faminc*** is the income of the family in 1975
+- ***kidslt6*** is the number of kids aged less than 6 years
+- ***nwifeinc*** is the family income that is not coming from the wife's working hours
+
+More information can be found [here](https://cran.r-project.org/web/packages/wooldridge/wooldridge.pdf#Rfn.mroz.1).
+
+Regress ***hours*** on ***lwage***, ***kidslt6***, ***age*** and ***educ*** and ***nwifeinc*** via OLS. What is the effect of a 5\% increase in the wage on hours worked? Compute the exact effect and the approximate effect. Show your work in **R**. 
+Do you expect to see this sign and level of significance for the ***lwage*** variable? What about the ***kidslt6*** variable? Explain. (3 points)
+
+##### **Answer:**
+```{r}
+
+library(tidyverse)
+mroz<- read_csv("mroz.csv")
+
+
+lmhours<- lm(hours~lwage+kidslt6+age+educ+nwifeinc, data = mroz)
+
+summary(lmhours)
+
+# What is the effect of a 5\% increase in the wage on hours worked? Compute the exact effect and the approximate effect.
+
+#Approx
+1.05*-2.0468
+
+# Precise
+-2.0468* log(1+0.05)
+
+# I expected to see the effect lwage had on hours worked. People have to decide whether they want to work or have free time (luxury). Once people begin to earn more and as a consequence have more money... they want to work less and enjoy luxury. Also it makes sense that someone who has a kid <6 years old works much less because having a young kid is very time demanding if you want to properly raise the child.
+
+```
+
+##### (b.) 
+One could wonder whether the ***lwage*** variable is endogenous. Explain why that could be the case and what the consequences are for the OLS estimate found in the previous question. Can you think of variables in this data set that could be used as instruments? Explain. (2 points)
+
+##### **Answer:**
+##### The variable lwage could be considered endogenous because it's difficult to quantify intelligence and effort. If the OLS estimates found in the previous question are found to be biased/inconsistent which would not lead to accurate results. The variables within this data I would count as potential instruments would be experience because it has little affect on hours worked. Additionally, the variable "education" could be a proper instrument because the amount of hours one works does not depend on education and effort is effected by it neither 
+
+##### (c.) 
+Using ***exper*** and ***expersq***  as instruments for ***lwage***, compute the 2SLS estimates using the ***ivreg***  command. The regression should include ***educ***, ***age***, ***nwifeinc*** and ***kidslt6*** as exogenous variables. What is the effect of a 5\% increase in the wage on hours worked now? Show you work in **R**. (3 points)
+
+##### **Answer:**
+```{r}
+tsls_model <- ivreg(hours ~ educ + age + kidslt6 + nwifeinc + lwage | educ + age + kidslt6 + nwifeinc + exper + expersq, data =mroz)
+summary(tsls_model)
+
+# Effect on 5% increase in wage on hours worked
+
+log(1+0.05)*1639.556
+
+## A 5% increase in wage will increase hours worked by roughly 80 hours per year.
+
+
+```
+
+##### (d.) 
+Using the instruments above, test whether ***lwage*** can be considered endogenous. (3 points)
+
+##### **Answer:**
+```{r}
+# Hausman test
+
+stage_1a <- lm(lwage ~ educ+age+nwifeinc+kidslt6, data=mroz)
+vhat<- stage_1a$residuals
+
+stage_2a <- lm(hours ~ vhat+lwage+educ+age+nwifeinc+kidslt6, data=mroz)
+summary (stage_2a)
+
+```
+
+##### (e.) 
+In order to check the validity of the instruments overall, consider the first stage regression and use the F statistic to tell whether the set of instruments used can be considered weak or strong overall. (3 points)
+
+##### **Answer:**
+
+```{r}
+# Answer here
+# We want to look first at the F stat and determine if it is greater or less than 10. If it's bigger, we can say that the instruments are jointly significant in which they are strong. in this case, it's approximately 3, so it is weak
+```
+
+### **Exercise 3 (12 points)**
+In this exercise, we are interested in the relationship between how open a country is, and its inflation rate. Some macroeconomic models suggests that more open countries are more sensitive to exchange rate fluctuations (in particular, real exchange rate depreciation is more harmful the more open an economy is). Romer (Quarterly journal of Economics, 1993) studied that relationship using a data set composed of countries with observed economic aggregates. More information can be found [here](https://cran.r-project.org/web/packages/wooldridge/wooldridge.pdf#Rfn.openness.1).
+
+
+##### (a.) 
+Load the ***openness.csv*** data set. What is the highest inflation rate observed in the sample? (1 point)
+
+##### **Answer:**
+
+```{r}
+openness <- read.csv("openness.csv")
+max(openness$inf)
+```
+
+##### (b.) 
+We are interested in the following model:
+\[
+inf_i = \beta_0 + \beta_1open_i + \beta_2lpcinc_i + u_i
+\]
+Compute the OLS estimates for this model. Do more open countries have significantly lower inflation rates? What is the effect of having a country increase its "openness" level by 5 units on inflation? (3 points)
+
+##### **Answer:**
+
+```{r}
+ols <- lm(openness$inf ~ openness$open + openness$pcinc)
+summary(ols)
+ 
+# inf_in = 26.838 -0.209open -0.000478pcincome 
+# From the table below, we can say that a country increasing its openness level by 5 units will have a 5*-0.2093617 = -1.0468085 decrease in the rate of inflation. Thus, open countries tend to have significantly lower inflation rates. 
+```
+
+##### (c.) 
+The author of the paper worried that ***open*** is an endogenous variable. Explain why that would be the case, and what variables from the sample could be used as instruments. You can support your claim with statistical evidence if needed. (2 points)
+
+##### **Answer:**
+#this could be the case, the open variable is dependent on the trade policy that a country has and these are not specified in the data. The land variable could potentially be used as an instrument because the correlation between land and inflation is ambiguous at this point, since its correlation to the error term is weakly negative (-0.31)
+```{r echo=TRUE}
+lcorrelation <- cor(openness$land, openness$open)
+lcorrelation
+```
+##### (d.) 
+Using ***lland*** as an instrument, compute the 2SLS estimates of the model above. Test the hypothesis that the coefficient associated to ***open*** is lower than 0 with a 5\% significance level. (3 points)
+
+##### **Answer:**
+
+```{r echo=TRUE}
+stage1_3d <- lm(open ~ lland + lpcinc, data = openness)
+open_hat <- stage1_3d$fitted
+
+stage2_3d <- lm(inf ~ open_hat + lpcinc, data = openness)
+summary(stage2_3d)
+```
+```{r echo=TRUE}
+#H0: beta_open_hat < 0, H1:beta_open_hat > 0, alpha = 0.05
+beta_open_hat <- -0.3375 
+
+sd <- 0.1428
+
+test_stat <- (beta_open_hat -0)/sd
+test_stat
+
+```
+
+```{r}
+crit_value <- qnorm(0.05)
+crit_value 
+
+if(test_stat>crit_value){"Reject H0"}else{"Fail to reject H0"}
+```
+##### (e.) 
+Test whether ***lland*** is a good instrument for ***open***. Would it be better to use ***land*** or ***lland*** as an instrument for ***open***? Show your work in **R**. (3 points)
+
+##### **Answer:**
+
+```{r}
+stage_1b <- lm(open ~lland + lpcinc, data = openness)
+summary(stage_1b)
+
+```
+```{r}
+stage_1c <- lm(open ~ land+lpcinc, data = openness)
+summary(stage_1c)
+```
+###We need to look at the F-stat for both regressions. The values are 45.17b for the lland regression and 8.21 for the land regression. Since the lland regression had a value > 10 and the land regression didn't, lland is a strong instrument and land is weak. Thus, lland is a better instrument for open. 
+
+##### (f.)
+ Another concern with this data set is the presence of heteroskedasticity. Explain why it could occur here and apply the procedure to check whether there is evidence of it or not. (3 points) -->
+What do you conclude? -->
+
+```{r}
+
+```
+
+##### (g.)
+Estimate the model from before with 2SLS, but show the heteroskedasticity consistent standard errors. Show your work in **R**. (2 points) -->
+
+#### **Answer:**
+
+```{r}
+
+```
