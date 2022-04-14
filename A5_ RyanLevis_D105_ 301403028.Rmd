@@ -1,0 +1,231 @@
+---
+title: "**ECON 333 assignment 5- D105 Rlevis**"
+author: "**Ryan Levis 301403028**"
+output:
+  html_document:
+    df_print: paged
+  pdf_document:
+    keep_tex: yes
+---
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+list.of.packages <- c("tidyverse", "sandwich")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+library(tidyverse)
+library(sandwich)
+```
+
+
+##### **The assignment must be knitted in html (do not submit the "nb.html" file that will be created alongside), and submitted on canvas by the deadline. Type your answer under the "Answer" section after each question. Chunks of code are inserted where the answer necessitates to use run some commands. Replace the "author" label with your full name, student number and tutorial section. Add your name and student number to the title of the file, after "A5 -". Late submissions will get a penalty, and failure to submit the html and Rmd file together result in a 0 grade. It is advised to break your code chunks in several code chunks so it is easier to grant partial marks.**
+
+
+### **Exercise 1 (16 points)**
+Load the ***meap.csv*** data set. This data set contains observations on schools in Michigan for the year 2001. Variables include district code of the school, building code, percentage of students having a satisfactory grade in $4^{th}$ grade math and reading, the percentage of students eligible for free or reduced lunch, enrollment level of the school, total spending by the school, expenditure per pupil (***expend/enroll***), and the logarithms of the last three variables.
+
+##### (a.)
+Regress ***math4*** on ***lunch***, ***lenroll*** and ***lexppp*** (log of expenditure per pupil). What is the effect of a 1\% increase in enrollment on the percentage of students who get a satisfactory performance in math? (The approximate effect is sufficient) Use your intuition to explain that effect. (2 points)
+
+##### **Answer:**
+
+```{r, message = FALSE}
+# Answer here
+meap <-read_csv("meap.csv")
+mathreg <- lm(math4 ~ lunch + lenroll + lexppp, data=meap)
+summary(mathreg)
+## A 1% increase in enrollment will decrease the percentage of students who get a satisfactory performance in math by approximately 5.4% when we take into account the effects from lunch and lexppp.
+```
+
+
+##### (b.)
+One might be worried that the model presents heteroskedasticity. Explain why it could be the case. Is there graphical evidence in favor or against heteroskedasticity? Show your work in $R$ and explain. (3 points)
+
+##### **Answer:**
+```{r, message = FALSE}
+# we want to verify that the regression is able to explain changes in math grades fully (i.e we want to ensure that the variance of the residuals doesn't increase with the fitted values of math grades). Graphically, there seems to be a pattern. It seems like the variance of the error terms decreases as the fitted values increase. 
+mathresi <-mathreg$residuals
+fit <- mathreg$fitted.values
+data <- data.frame(meap$math4, mathresi, fit)
+ggplot(data=meap, aes(x=fit, y=mathresi))+geom_point(col='blue')+geom_abline(slope = 0)
+```
+
+##### (c.)
+Run the Breusch Pagan test. Show your work in $R$. What do you conclude? (2 points)
+
+##### **Answer:**
+```{r, message = FALSE}
+##Since the p-value is less than 0.05, we conclude that there is enough evidence to say there is heteroskedasticity. 
+resi_sq <- lm(mathresi^2~meap$lunch+meap$lenroll+meap$lexppp)
+summary(resi_sq)
+q <- 3
+n <- nrow(meap)
+K <- 3
+qf(p=0.95, df1 = 3, df2= n-K-1)
+#we reject the null hypothesis that there is homoskedasticity as the F-Statistic is much bigger than the critical value of 2.61
+```
+
+
+##### (d.)
+Run the White test using the fitted values of the OLS regression. Show your work in $R$. What do you conclude? (2 points)
+
+##### **Answer:**
+
+```{r, message = FALSE}
+library(lmtest)
+fit2 <- fit^2
+mathsqrd <- mathresi^2
+wt <- lm(mathsqrd ~ fit + fit2)
+summary(wt)
+qf(p=0.95, df1=2, df2=n-2-1)
+##white test only checks if variables are exogenous, you could use any test FGLS method, it is the solution to heteroskedasticity. The p-value in this case is less than 0.005, thus we conclude that there is heteroskedasticity. 
+```
+
+
+##### (e.) 
+Estimate the model via FGLS. Include all the covariates and their square in the second step. Clearly show the steps one by one in $R$. (5 points)
+
+```{r, message = FALSE}
+# Answer here
+mathcbd <- mathresi^3
+l_mathresisqrd <- log(mathsqrd)
+
+# Step 1
+fglsols <- lm(math4 ~ lunch+ lenroll+ lexppp, data=meap)
+summary(fglsols)
+resi <- fglsols$residuals
+resi2 <- resi^2
+l_resi2 <- log(resi2)
+# Adding With polynomial terms
+x2 <- meap$lunch^2
+y2 <- meap$lenroll^2
+z2 <- meap$lexppp^2
+# Step 2
+res_model <- lm(l_resi2 ~ lunch + lenroll +lexppp + x2 + y2 +z2, data=meap)
+# step 3
+res_fit <- exp(res_model$fitted)
+# Step 4
+ystar <- meap$math4/sqrt(res_fit)
+xstar <- meap$lunch/sqrt(res_fit)
+xstar2 <- meap$lenroll/sqrt(res_fit)
+xstar3 <- meap$lexppp/sqrt(res_fit)
+int <- 1/sqrt(res_fit) # gotta transform the intercept too!
+# Step 5
+fgls_model <- lm(ystar ~ int + xstar + xstar2 + xstar3)
+summary(fgls_model)
+
+```
+
+##### (f.) 
+Estimate the model via OLS again, but compute the heteroskedasticity-robust standard errors. Compare the significance of each variable when using the OLS standard errors vs the heteroskedasticity-robust ones. You might need to install and load the ***sandwich*** package. (2 points)
+
+##### **Answer:**
+
+```{r, message = FALSE}
+sqrt(vcovHC(mathreg))
+summary(mathreg)
+
+t_intercept <- 91.93246 / 23.2034989
+t_intercept
+t_beta1 <-  -0.44874/ 0.01663667
+t_beta1
+t_beta2 <- -5.39915 / 1.1347794
+t_beta2
+t_beta3 <- 3.52474 / 2.367336
+t_beta3
+```
+As we can see here that we dont have the 10% significance on the lexppp anymore as the new t is lower than the original OLS test stat
+
+### **Exercise 2 (14 points)**
+
+##### (a.) 
+Load the ***expendshare.csv*** data set. Typing "message = FALSE" inside ***```{r, ...}*** will prevent messages related to loading the data set from appearing (you don't have to include that, it is up to you).
+Regress ***sfood*** on ***ltotexpend***, ***lincome***, ***age*** and ***kids***. Compute the $C_p$, AIC and BIC criterion functions, as well as the adjusted $R^2$ via direct computations (i.e. use the formula). Call them **C_p_1**, **AIC_1**, **BIC_1** and **adj_R2_1**. Show your results in $R$. (3 points)
+
+##### **Answer:**
+```{r, message = FALSE}
+expdata <- read_csv("expendshare.csv")
+sfoodreg <- lm(sfood~ltotexpend+lincome+age+kids, data=expdata)
+summary(sfoodreg)
+sf1 <- sum((sfoodreg$residuals)^2)
+sf1
+n1 <- nrow(expdata)
+d <- 4
+sv1<- sf1/(n1-4-1)
+sv1
+C_p_1 <- (sf1 + 2*4*sv1)/n1
+C_p_1
+AIC_1 <- (sf1+2*4*sv1)/(n1*sv1)
+AIC_1
+BIC_1 <- (sf1+4*log(n1)*sv1)/(sv1*n1)
+BIC_1
+ybar <- mean(expdata$sfood)
+tss <- sum((expdata$sfood-ybar)^2)
+Adj_R2_1 <- 1-(sf1/(n1-4-1)/(tss/(n1-1)))
+Adj_R2_1
+```
+
+##### (b.) 
+Regress ***sfood*** on ***ltotexpend***, ***lincome***, ***age***, ***agesq*** and ***kids***. Compute the AIC and BIC criterion functions, as well as the adjusted $R^2$  via direct computations (i.e. use the formula). Call them **C_p_2**, **AIC_2**, **BIC_2** and **adj_R2_2**. Which model should you select between the one estimated here and in the previous question according to each of the criteria you computed? (4 points)
+
+##### **Answer:**
+
+```{r, message = FALSE}
+foodreg2 <- lm(sfood~ltotexpend+lincome+age+agesq+kids, data=expdata)
+summary(foodreg2)
+SSR2 <- sum((foodreg2$residuals)^2)
+SSR2
+n2 <- nrow(expdata)
+c <- 5
+fv<- SSR2/(n2-c-1)
+sv1
+C_p_2 <- (SSR2 + 2*c*fv)/n2
+C_p_2
+AIC_2 <- (SSR2+2*c*fv)/(n2*sv1)
+AIC_2
+BIC_2 <- (SSR2+c*log(n1)*fv)/(fv*n2)
+BIC_2
+ybar <- mean(expdata$sfood)
+tss <- sum((expdata$sfood-ybar)^2)
+Adj_R2_2 <- 1-(SSR2/(n2-c-1)/(tss/(n2-1)))
+Adj_R2_2
+```
+
+
+#These score is the second model are slightly higher, since this is desirable, we should select the second model as the better model. 
+
+##### (c.) 
+Cut the data set in two halves (since $n$ is odd, add the extra observation to the training data set. Hint: to take a subset of the data, you can use data[ , ] where the first number in the square brackets corresponds to rows, and the second number corresponds to columns). The training sample will be the first half of the sample (from the first to the ... observation). On the training sample, regress ***sfood*** on ***ltotexpend***, ***lincome***, ***age*** and ***kids***. Call this model model_1. Use the estimates of this model to compute the test MSE (compute the predictions of the test data set using the estimates from the training data set), and call it test_MSE_1. (3 points)
+
+##### **Answer:**
+```{r, message = FALSE}
+# Answer here compute new t stat 
+#training - data --> get beta hats 
+#use beta hats to comput the y hat from the test data set.seed
+
+rows <- (nrow(expdata)+1)/2
+rows
+training <- expdata[1:760,] 
+training 
+test <- expdata[761:1519,]
+model_1 <- lm(sfood~ltotexpend+lincome+ age+ kids, data=training)
+summary(model_1)
+trainMSE <- mean(model_1$residuals^2)
+test_MSE_1 <- mean( (expdata$sfood - predict(model_1, expdata) )^2 )
+test_MSE_1
+
+
+```
+##### (d.) 
+On the training sample, regress ***sfood*** on ***ltotexpend***, ***lincome***, ***age***, ***agesq*** and ***kids***. Call this model *model_2*. Use the estimates of this model to compute the test MSE (compute the predictions of the test data set using the estimates from the training data set), and call it *test_MSE_2*. What model would you choose between *model_2* and *model_1*? (4 points)
+
+##### **Answer:**
+```{r, message = FALSE}
+model_2 <- lm(sfood~ltotexpend+lincome+ age+ agesq+ kids, data=training)
+summary(model_2)
+train <- mean(model_1$residuals^2)
+test_MSE_2 <- mean( (expdata$sfood - predict(model_2,expdata) )^2 )
+test_MSE_2
+
+```
+ 
+ #the closer to zero, the more accurate the model. Thus, since model_2_MSE < model_1_MSE , model_2 is the better model. 
